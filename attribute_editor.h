@@ -17,6 +17,7 @@ public:
     bool setData(const QModelIndex &index, const QVariant &value, int role);
     Attribute attribute(QString name) { return _instance->attributeByName(name); }
     Bindable* instance() { return _instance; }
+    //    void registerType(QString type, void (*f)(int) updateFunc);
 signals:
 
 public slots:

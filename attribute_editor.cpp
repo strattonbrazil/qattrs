@@ -7,11 +7,23 @@
 // editor should check if its a C++-managed attribute and get/set it accordingly
 //
 
+class AttrInfo
+{
+};
+
+class AttrHandler
+{
+public:
+  virtual AttrInfo update(Bindable *bindable, Attribute attribute) = 0;
+  virtual void setValue(Bindable *bindable, Attribute attribute, QVariant outValue);
+  virtual void paint(const AttributeItemDelegate *delegate);
+};
+
+QHash<QString, AttrHandler*> registeredTypes;
 
 AttributeEditor::AttributeEditor(QWidget *parent) :
     QStandardItemModel(parent), _instance(0)
 {
-
 }
 
 void AttributeEditor::update(Bindable* instance)
@@ -29,8 +41,12 @@ void AttributeEditor::update(Bindable* instance)
         QList<QList<QStandardItem*> > subRows;
 
         if (attribute->property("getter").isValid()) {
-            //std::cout << attribute->type().toStdString() << std::endl;
             QString value = "?";
+            if (registeredTypes.contains(attribute->type())) {
+              AttrInfo attrInfo = registeredTypes[attribute->type()]->update(_instance, attribute);
+            }
+
+#if 0
             if (attribute->type() == "point3" || attribute->type() == "vector3") {
                 QVector3D p = getBoundValue<QVector3D>(_instance, attribute);
                 value = QString("(%1, %2, %3)").arg(p.x()).arg(p.y()).arg(p.z());
@@ -47,7 +63,6 @@ void AttributeEditor::update(Bindable* instance)
                     subRows << subRow;
                 }
             }
-            //std::cout << getBoundValue<Point3>(_instance, attribute) << std::endl;
             attributeRow << new QStandardItem(value);
             appendRow(attributeRow);
 
@@ -55,6 +70,8 @@ void AttributeEditor::update(Bindable* instance)
             foreach(QList<QStandardItem*> subRow, subRows) {
                 nameItem->appendRow(subRow);
             }
+#endif
+            
 
         }
         else {
@@ -89,13 +106,6 @@ bool AttributeEditor::setData(const QModelIndex &index, const QVariant &inValue,
     else
         attrName = data(index.sibling(index.row(), 0)).toString();
     Attribute attribute = _instance->attributeByName(attrName);
-    /*
-    Attribute attribute;
-    if (index.parent().isValid())
-        attribute = _instance->attribute(model->data(index.parent().sibling(index.parent().row(), 0)).toString());
-    else
-        attribute = _instance->attribute(model->data(index.sibling(index.row(), 0)).toString());
-        */
 
     // perform any necessary clamping or adjustments
     QVariant outValue = inValue;
@@ -117,8 +127,11 @@ bool AttributeEditor::setData(const QModelIndex &index, const QVariant &inValue,
     if (attribute->property("getter").isValid() && attribute->property("setter").isValid()) {
         if (!(index.parent().isValid())) { // don't call setter for sub-channels
             AttributeEditor* model = (AttributeEditor*)(index.model());
-            if (attribute->type() == "point3")
-                setBoundValue<QVector3D>(model->instance(), attribute, outValue.value<Point3>());
+            if (registeredTypes.contains(attribute->type())) {
+              registeredTypes[attribute->type()]->setValue(model->instance(), attribute, outValue);
+            }
+            //            if (attribute->type() == "point3")
+            //                setBoundValue<QVector3D>(model->instance(), attribute, outValue.value<Point3>());
         }
     }
     else if (attribute->property("getter").isValid())
@@ -177,10 +190,6 @@ void AttributeItemDelegate::setEditorData(QWidget *editor, const QModelIndex &in
     else
         attribute = model->attribute(model->data(index.sibling(index.row(), 0)).toString());
 
-
-//    if (index.parent().isValid()) // subcomponents
-  //      QStyledItemDelegate::setEditorData(editor, index);
-
     if (attribute->property("type").toString() == "color") {
         QColorDialog* dialog = qobject_cast<QColorDialog*>(editor);
         dialog->setCurrentColor(attribute->property("value").value<QColor>());
@@ -206,11 +215,11 @@ void AttributeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
         model->setData(index, selectedColor);
         //QItemDelegate::setModelData(editor, model, index);
     }
+    else if (registeredTypes.contains(attribute->type())) {
+      //      registeredTypes[attribute->type()]->setData(editor, model, index);
+    }
+    /*
     else if (attribute->type() == "point3") {
-
-        //if (!n.isEmpty())
-        //    model->setData(index, editor->property(n), Qt::EditRole);
-
         // use QItemEditorFactory for mapping of QVariant type to QWidget
         QLineEdit* w = qobject_cast<QLineEdit*>(editor);
         float channelVal = w->text().toFloat();
@@ -221,22 +230,15 @@ void AttributeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
         else if (index.row() == 1) p.setY(channelVal);
         else p.setZ(channelVal);
 
-        //std::cout << QVariant(p).value<QVector3D>() << std::endl;
-
-        //QLineEdit w;
-        //w.setText(QString("(%1, %2, %3)").arg(p.x()).arg(p.y()).arg(p.z()));
         model->setData(index.parent().sibling(index.parent().row(), 1), QVariant(p));
         model->setData(index, QVariant(channelVal));
-        //QVector3D previous = qVariantValue<QVector3D>(model->data(index.parent().sibling(index.parent().row(), 1)));
-        //std::cout << previous << std::endl;
-        //model->setData(index.parent(), p);
-        //QStyledItemDelegate::setModelData(editor, model, index.parent());
     }
+    */
     else {
         QStyledItemDelegate::setModelData(editor, model, index);
     }
 
-    SunshineUi::updatePanels();
+    //    SunshineUi::updatePanels();
 }
 
 void AttributeItemDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const
@@ -295,6 +297,9 @@ void AttributeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
         //style->drawControl(QStyle::CE_CheckBox, &options, painter);
         style->drawControl(QStyle::CE_CheckBox, &check_box_style_option, painter);
     }
+    else if (registeredTypes.contains(attribute->type())) {
+      registeredTypes[attribute->type()]->paint(this);
+#if 0
     else if (attribute->type() == "point3") {
         QVector3D p;
         if (attribute->property("getter").isValid())
@@ -360,7 +365,7 @@ void AttributeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
             //painter.setClipRect(r);
         }
         */
-
+#endif
     } else {
         QStyledItemDelegate::paint(painter, option, index);
     }

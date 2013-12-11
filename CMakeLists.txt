@@ -6,7 +6,7 @@ PROJECT(qattrs)
 FIND_PACKAGE(Qt4 REQUIRED)
 
 SET(qattrs_SOURCES test.cpp attribute_editor.cpp)
-#SET(helloworld_HEADERS hellowindow.h)
+#SET(qattrs_HEADERS attribute_editor.h)
 
 INCLUDE(${QT_USE_FILE})
 ADD_DEFINITIONS(${QT_DEFINITIONS})
