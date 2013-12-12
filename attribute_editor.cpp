@@ -15,8 +15,8 @@ class AttrHandler
 {
 public:
   virtual AttrInfo update(Bindable *bindable, Attribute attribute) = 0;
-  virtual void setValue(Bindable *bindable, Attribute attribute, QVariant outValue);
-  virtual void paint(const AttributeItemDelegate *delegate);
+  virtual void setValue(Bindable *bindable, Attribute attribute, QVariant outValue) = 0;
+  virtual void paint(const AttributeItemDelegate *delegate) = 0;
 };
 
 QHash<QString, AttrHandler*> registeredTypes;

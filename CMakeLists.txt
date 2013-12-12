@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 # http://qt-project.org/quarterly/view/using_cmake_to_build_qt_projects
+set(CMAKE_AUTOMOC ON)
 
 PROJECT(qattrs)
 FIND_PACKAGE(Qt4 REQUIRED)

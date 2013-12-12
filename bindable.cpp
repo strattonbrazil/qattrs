@@ -68,6 +68,15 @@ void Bindable::addAttributes(QStringList attributes) {
     }
 }
 
+bool Bindable::eventFilter(QObject *obj, QEvent *event)
+{
+  std::cout << "eventing!" << std::endl;
+  if(event->type() == QEvent::DynamicPropertyChange) {
+    std::cout << "prop changed..." << std::endl;
 
-
-
+    //    QWidget *const window = qobject_cast<QWidget *>(obj);
+    //if(window)
+    //emit titleChanged(window->windowTitle());
+  } 
+  return QObject::eventFilter(obj, event);
+}

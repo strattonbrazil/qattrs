@@ -41,12 +41,13 @@ public:
 
 
     // called when an attribute changes in the editor
-    void toInstance(QString attribute, QVariant value) {}
+    //void toInstance(QString attribute, QVariant value) {}
 
     // called when an attribute changes on the instance
-    void toEditor(QString attribute, QVariant value) {}
+    //void toEditor(QString attribute, QVariant value) {}
 
     //T Bindable::getter(Attribute attribute);
+    bool eventFilter(QObject *obj, QEvent *event);
 signals:
 
 public slots:
